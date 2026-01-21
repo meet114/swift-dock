@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture - Swiftdock</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .doc-content { max-width: 1000px; margin: 0 auto; padding: 3rem 20px; }
+        .doc-content h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .doc-content h2 { font-size: 2rem; margin-top: 3rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.5rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--accent); }
+        .diagram { background: var(--bg-secondary); border: 2px solid var(--border); border-radius: 12px; padding: 2rem; margin: 2rem 0; text-align: center; }
+        .component { background: var(--bg-code); border: 2px solid var(--accent); border-radius: 8px; padding: 1rem; margin: 1rem; display: inline-block; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand"><h1>🚀 Swiftdock</h1></div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="getting-started.html">Getting Started</a>
+                <a href="api-reference.html">API Reference</a>
+                <a href="cli-reference.html">CLI Reference</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="https://github.com/meetsaspara/swiftdock" target="_blank">GitHub</a>
+            </div>
+            <button class="theme-toggle" id="themeToggle">🌙</button>
+        </div>
+    </nav>
+
+    <main class="doc-content">
+        <h1>Architecture</h1>
+        <p>Understanding the design and components of Swiftdock.</p>
+
+        <h2>System Overview</h2>
+        <div class="diagram">
+            <div class="component">CLI (swiftdock)</div>
+            <p>↓ HTTP (localhost:8080) ↓</p>
+            <div class="component">Daemon (swiftdockd)</div>
+            <p>↓</p>
+            <div class="component">Runtime + ImageStore</div>
+            <p>↓</p>
+            <div class="component">~/.swiftdock/</div>
+        </div>
+
+        <h2>Components</h2>
+
+        <h3>1. CLI (apps/cli)</h3>
+        <p>Command-line interface that users interact with. Built with ArgumentParser.</p>
+        <ul>
+            <li>Sends HTTP requests to the daemon</li>
+            <li>Parses command-line arguments</li>
+            <li>Formats output for users</li>
+            <li>Commands: <code>pull</code>, <code>run</code>, <code>ps</code>, <code>logs</code></li>
+        </ul>
+
+        <h3>2. Daemon (apps/daemon)</h3>
+        <p>HTTP server that manages containers and images. Built with Hummingbird.</p>
+        <ul>
+            <li>Listens on <code>localhost:8080</code></li>
+            <li>Exposes REST API for container operations</li>
+            <li>Manages container lifecycle</li>
+            <li>Controllers: <code>ImageController</code>, <code>ContainerController</code></li>
+        </ul>
+
+        <h3>3. Core Packages</h3>
+
+        <h4>Common (packages/Common)</h4>
+        <ul>
+            <li><code>ImageReference</code> - Parse image names (e.g., <code>alpine:latest</code>)</li>
+            <li><code>SwiftdockClient</code> - HTTP client for daemon communication</li>
+            <li>DTOs - Data transfer objects for API requests/responses</li>
+        </ul>
+
+        <h4>RegistryClient (packages/RegistryClient)</h4>
+        <ul>
+            <li>Fetches Docker/OCI manifests from registries</li>
+            <li>Handles Docker Hub authentication</li>
+            <li>Downloads image layers (blobs)</li>
+            <li>Supports manifest lists (multi-platform images)</li>
+        </ul>
+
+        <h4>ImageStore (packages/ImageStore)</h4>
+        <ul>
+            <li>Stores image layers in <code>~/.swiftdock/blobs/</code></li>
+            <li>Unpacks layers to <code>~/.swiftdock/images/&lt;name&gt;/rootfs/</code></li>
+            <li>Verifies blob integrity (SHA256)</li>
+            <li>Uses system <code>tar</code> for extraction</li>
+        </ul>
+
+        <h4>Runtime (packages/Runtime)</h4>
+        <ul>
+            <li><code>ContainerHost</code> - Manages container lifecycle</li>
+            <li>Creates container filesystems</li>
+            <li>Spawns processes using <code>Process()</code></li>
+            <li>Captures stdout/stderr to <code>std.log</code></li>
+            <li>Tracks container status (created, running, exited)</li>
+        </ul>
+
+        <h2>Data Flow</h2>
+
+        <h3>Pulling an Image</h3>
+        <ol>
+            <li>User runs <code>swiftdock pull alpine:latest</code></li>
+            <li>CLI sends <code>POST /images/pull</code> to daemon</li>
+            <li>Daemon uses <code>RegistryClient</code> to fetch manifest</li>
+            <li><code>RegistryClient</code> downloads layers from Docker Hub</li>
+            <li><code>ImageStore</code> verifies and stores blobs</li>
+            <li><code>ImageStore</code> unpacks layers to rootfs</li>
+            <li>Daemon returns success to CLI</li>
+        </ol>
+
+        <h3>Running a Container</h3>
+        <ol>
+            <li>User runs <code>swiftdock run alpine -- echo "hi"</code></li>
+            <li>CLI sends <code>POST /containers/create</code></li>
+            <li>Daemon creates container metadata and rootfs</li>
+            <li>CLI sends <code>POST /containers/:id/start</code></li>
+            <li><code>ContainerHost</code> spawns <code>Process()</code> with command</li>
+            <li>Process runs in container rootfs directory</li>
+            <li>stdout/stderr captured to <code>std.log</code></li>
+            <li>CLI polls until container exits</li>
+            <li>CLI fetches and displays logs</li>
+        </ol>
+
+        <h2>Storage Layout</h2>
+        <div class="code-example">
+            <pre><code>~/.swiftdock/
+├── blobs/
+│   └── sha256:abc123...  # Compressed layer data
+├── images/
+│   └── alpine_latest/
+│       └── rootfs/        # Unpacked filesystem
+│           ├── bin/
+│           ├── etc/
+│           └── ...
+└── containers/
+    └── &lt;uuid&gt;/
+        ├── config.json    # Container metadata
+        ├── rootfs/        # Copy of image rootfs
+        └── std.log        # stdout/stderr</code></pre>
+        </div>
+
+        <h2>Design Decisions</h2>
+
+        <h3>Why HTTP API?</h3>
+        <ul>
+            <li>Enables remote control and custom clients</li>
+            <li>Language-agnostic (curl, Python, Swift, etc.)</li>
+            <li>Foundation for future SwiftUI apps</li>
+        </ul>
+
+        <h3>Why Process() instead of namespaces?</h3>
+        <ul>
+            <li>macOS doesn't support Linux namespaces</li>
+            <li>Process() is native and simple</li>
+            <li>Focus on educational/lightweight use case</li>
+        </ul>
+
+        <h3>Why Copy-on-Run?</h3>
+        <ul>
+            <li>Simplicity over CoW filesystems</li>
+            <li>Each container gets isolated rootfs</li>
+            <li>Future: Use APFS clones for efficiency</li>
+        </ul>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Swiftdock. MIT Licensed. Built with ❤️ for macOS.</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

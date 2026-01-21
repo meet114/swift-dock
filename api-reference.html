@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - Swiftdock</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .doc-content { max-width: 1000px; margin: 0 auto; padding: 3rem 20px; }
+        .doc-content h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .doc-content h2 { font-size: 2rem; margin-top: 3rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+        .doc-content h3 { font-size: 1.5rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--accent); }
+        .doc-content p { margin-bottom: 1rem; }
+        .endpoint { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin: 2rem 0; }
+        .endpoint-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+        .method { padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.9rem; }
+        .method.get { background: #28a745; color: white; }
+        .method.post { background: #007bff; color: white; }
+        .endpoint-path { font-family: 'Monaco', monospace; font-size: 1.1rem; }
+        .schema { background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+        .schema h4 { margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem; }
+        .base-url { background: var(--bg-code); padding: 0.75rem 1rem; border-radius: 6px; font-family: 'Monaco', monospace; margin: 1rem 0; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>🚀 Swiftdock</h1>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="getting-started.html">Getting Started</a>
+                <a href="api-reference.html">API Reference</a>
+                <a href="cli-reference.html">CLI Reference</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="https://github.com/meetsaspara/swiftdock" target="_blank">GitHub</a>
+            </div>
+            <button class="theme-toggle" id="themeToggle">🌙</button>
+        </div>
+    </nav>
+
+    <main class="doc-content">
+        <h1>API Reference</h1>
+        <p>The Swiftdock daemon exposes a RESTful HTTP API for programmatic control of containers and images.</p>
+
+        <h2>Base URL</h2>
+        <div class="base-url">http://localhost:8080</div>
+        <p>All endpoints are relative to this base URL.</p>
+
+        <h2>Endpoints</h2>
+
+        <!-- Health Check -->
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/health</span>
+            </div>
+            <p><strong>Description:</strong> Health check endpoint to verify the daemon is running.</p>
+            
+            <h4>Response</h4>
+            <div class="schema">
+                <h4>200 OK</h4>
+                <div class="code-example">
+                    <pre><code>OK</code></pre>
+                </div>
+            </div>
+
+            <h4>Example</h4>
+            <div class="code-example">
+                <pre><code>curl http://localhost:8080/health</code></pre>
+            </div>
+        </div>
+
+        <!-- Pull Image -->
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/images/pull</span>
+            </div>
+            <p><strong>Description:</strong> Pull an OCI/Docker image from a registry.</p>
+            
+            <h4>Request Body</h4>
+            <div class="schema">
+                <h4>application/json</h4>
+                <div class="code-example">
+                    <pre><code>{
+  "image": "alpine:latest"
+}</code></pre>
+                </div>
+            </div>
+
+            <h4>Response</h4>
+            <div class="schema">
+                <h4>200 OK</h4>
+                <div class="code-example">
+                    <pre><code>OK</code></pre>
+                </div>
+            </div>
+
+            <h4>Example</h4>
+            <div class="code-example">
+                <pre><code>curl -X POST http://localhost:8080/images/pull \
+  -H "Content-Type: application/json" \
+  -d '{"image": "alpine:latest"}'</code></pre>
+            </div>
+        </div>
+
+        <!-- Create Container -->
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/containers/create</span>
+            </div>
+            <p><strong>Description:</strong> Create a new container from an image.</p>
+            
+            <h4>Request Body</h4>
+            <div class="schema">
+                <h4>application/json</h4>
+                <div class="code-example">
+                    <pre><code>{
+  "image": "alpine:latest",
+  "command": ["echo", "Hello World"]
+}</code></pre>
+                </div>
+            </div>
+
+            <h4>Response</h4>
+            <div class="schema">
+                <h4>200 OK</h4>
+                <div class="code-example">
+                    <pre><code>{
+  "id": "6B53E52E-B2EC-435D-B957-B5202C1E5677",
+  "image": "alpine:latest",
+  "status": "created",
+  "pid": null
+}</code></pre>
+                </div>
+            </div>
+
+            <h4>Example</h4>
+            <div class="code-example">
+                <pre><code>curl -X POST http://localhost:8080/containers/create \
+  -H "Content-Type: application/json" \
+  -d '{"image": "alpine:latest", "command": ["echo", "Hello"]}'</code></pre>
+            </div>
+        </div>
+
+        <!-- Start Container -->
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/containers/:id/start</span>
+            </div>
+            <p><strong>Description:</strong> Start a created container.</p>
+            
+            <h4>Path Parameters</h4>
+            <ul>
+                <li><code>id</code> - Container ID (UUID)</li>
+            </ul>
+
+            <h4>Response</h4>
+            <div class="schema">
+                <h4>200 OK</h4>
+                <div class="code-example">
+                    <pre><code>{
+  "pid": 85965
+}</code></pre>
+                </div>
+            </div>
+
+            <h4>Example</h4>
+            <div class="code-example">
+                <pre><code>curl -X POST http://localhost:8080/containers/6B53E52E-B2EC-435D-B957-B5202C1E5677/start</code></pre>
+            </div>
+        </div>
+
+        <!-- List Containers -->
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/containers</span>
+            </div>
+            <p><strong>Description:</strong> List all containers.</p>
+
+            <h4>Response</h4>
+            <div class="schema">
+                <h4>200 OK</h4>
+                <div class="code-example">
+                    <pre><code>[
+  {
+    "id": "6B53E52E-B2EC-435D-B957-B5202C1E5677",
+    "image": "alpine:latest",
+    "status": "exited",
+    "pid": 85965
+  },
+  {
+    "id": "2DF48833-0B9F-466C-938E-741F47F72B09",
+    "image": "alpine:latest",
+    "status": "created",
+    "pid": null
+  }
+]</code></pre>
+                </div>
+            </div>
+
+            <h4>Example</h4>
+            <div class="code-example">
+                <pre><code>curl http://localhost:8080/containers</code></pre>
+            </div>
+        </div>
+
+        <!-- Get Logs -->
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/containers/:id/logs</span>
+            </div>
+            <p><strong>Description:</strong> Get stdout/stderr logs from a container.</p>
+            
+            <h4>Path Parameters</h4>
+            <ul>
+                <li><code>id</code> - Container ID (UUID)</li>
+            </ul>
+
+            <h4>Response</h4>
+            <div class="schema">
+                <h4>200 OK</h4>
+                <div class="code-example">
+                    <pre><code>Hello World
+</code></pre>
+                </div>
+            </div>
+
+            <h4>Example</h4>
+            <div class="code-example">
+                <pre><code>curl http://localhost:8080/containers/6B53E52E-B2EC-435D-B957-B5202C1E5677/logs</code></pre>
+            </div>
+        </div>
+
+        <h2>Error Handling</h2>
+        <p>The API returns standard HTTP status codes:</p>
+        <ul>
+            <li><strong>200 OK</strong> - Request successful</li>
+            <li><strong>400 Bad Request</strong> - Invalid request body or parameters</li>
+            <li><strong>404 Not Found</strong> - Container or resource not found</li>
+            <li><strong>500 Internal Server Error</strong> - Server error</li>
+        </ul>
+
+        <h2>Content Type</h2>
+        <p>All requests and responses use <code>application/json</code> unless otherwise specified.</p>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Swiftdock. MIT Licensed. Built with ❤️ for macOS.</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
