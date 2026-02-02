@@ -3,7 +3,7 @@
 A native macOS container runtime and management tool.
 
 ## Philosophy
-
+ 
 - **Mac-First**: Designed for macOS, using native APIs where possible.
 - **Clean Architecture**: Clear separation between daemon, CLI, and clients.
 - **Open Source**: MIT Licensed and community driven.
